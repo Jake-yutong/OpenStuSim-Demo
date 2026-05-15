@@ -34,6 +34,16 @@ Optional environment variables:
 - `OPENAI_BASE_URL`
 - `MODEL_NAME`
 
+## Web Demo
+
+For an interactive reproduction and presentation interface:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+The web demo lets you configure dry-run/API mode, edit prompt templates, inspect questions, run the full pipeline, and view generated answers, tutor feedback, judged results, metrics, and figures.
+
 If `data/sample_questions.csv` is missing, the script creates a dummy file with five open-ended science questions.
 
 ## Outputs
