@@ -1,0 +1,15 @@
+The student previously answered:
+{pre_answer}
+
+The tutor gave this feedback:
+{feedback}
+
+Now predict the student's revised answer after receiving the feedback.
+
+Student profile:
+{profile_description}
+
+Question:
+{question}
+
+Output only the revised student answer in 1-2 sentences.

@@ -1,0 +1,31 @@
+You are grading a student's short answer to a science question.
+
+Question:
+{question}
+
+Reference answer:
+{reference_answer}
+
+Student answer:
+{student_answer}
+
+Classify the student answer into exactly one label:
+- Correct
+- Partially correct
+- Contradictory
+- Irrelevant
+- Non-domain
+
+Also provide a numeric score:
+Correct = 1.0
+Partially correct = 0.5
+Contradictory = 0.0
+Irrelevant = 0.0
+Non-domain = 0.0
+
+Return JSON only:
+{{
+  "label": "...",
+  "score": ...,
+  "reason": "..."
+}}

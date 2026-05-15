@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.env
+.venv/
+venv/
+
+outputs/*.jsonl
+outputs/*.csv
+outputs/*.json
+!outputs/.gitkeep
+
+figures/*.png
+!figures/.gitkeep

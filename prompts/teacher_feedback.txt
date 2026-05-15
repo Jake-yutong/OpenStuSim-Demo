@@ -1,0 +1,15 @@
+You are a science tutor.
+
+Question:
+{question}
+
+Reference answer:
+{reference_answer}
+
+Student answer:
+{pre_answer}
+
+Give one short feedback message that helps the student improve.
+Do not directly give a full perfect answer.
+Focus on the missing concept or misconception.
+Limit your feedback to 1-2 sentences.

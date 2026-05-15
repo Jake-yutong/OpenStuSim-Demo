@@ -1,0 +1,6 @@
+qid,question,reference_answer,real_correct,real_partial,real_contradictory,real_irrelevant,real_nondomain,real_mean_score
+Q001,Why does a metal spoon feel colder than a wooden spoon at the same room temperature?,"Metal conducts heat away from your hand faster than wood, so it feels colder even when both objects have the same temperature.",8,3,1,1,0,0.72
+Q002,Explain why plants need light for photosynthesis.,"Plants use light energy to convert carbon dioxide and water into glucose and oxygen during photosynthesis.",7,4,1,1,0,0.68
+Q003,What causes day and night on Earth?,"Day and night are caused by Earth's rotation, which turns different parts of the planet toward or away from the Sun.",9,2,1,0,0,0.81
+Q004,Why does salt dissolve in water?,"Water molecules are polar and attract the positive and negative ions in salt, pulling them apart into solution.",6,5,1,1,0,0.63
+Q005,Why do objects fall toward Earth when dropped?,"Objects fall toward Earth because Earth's gravity pulls objects with mass toward its center.",8,3,1,1,0,0.74
