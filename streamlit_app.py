@@ -45,6 +45,25 @@ PROMPT_FILES = {
     "judge_5way": JUDGE_PROMPT_PATH,
 }
 
+PROVIDER_PRESETS = {
+    "OpenAI": {
+        "base_url": "",
+        "model": "gpt-4o-mini",
+    },
+    "DeepSeek": {
+        "base_url": "https://api.deepseek.com/v1",
+        "model": "deepseek-chat",
+    },
+    "Qwen": {
+        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "qwen-plus",
+    },
+    "Custom": {
+        "base_url": os.getenv("OPENAI_BASE_URL", ""),
+        "model": os.getenv("MODEL_NAME", "gpt-4o-mini"),
+    },
+}
+
 
 st.set_page_config(page_title="OpenStuSim Demo", layout="wide")
 
@@ -151,15 +170,34 @@ with st.sidebar:
         options=list(PROMPT_TEMPLATE_PATHS.keys()),
         default=DEFAULT_PROMPT_MODES,
     )
-    model = st.text_input("Model", value=os.getenv("MODEL_NAME", "gpt-4o-mini"))
+    provider = st.selectbox(
+        "Provider",
+        options=list(PROVIDER_PRESETS.keys()),
+        disabled=dry_run,
+        help="DeepSeek and Qwen use OpenAI-compatible APIs with provider-specific base URLs.",
+    )
+    if st.session_state.get("last_provider") != provider:
+        preset = PROVIDER_PRESETS[provider]
+        st.session_state["model_input"] = preset["model"]
+        st.session_state["base_url_input"] = preset["base_url"]
+        st.session_state["last_provider"] = provider
+
+    model = st.text_input("Model", key="model_input")
     temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.05)
-    api_key = st.text_input("OPENAI_API_KEY", type="password", disabled=dry_run)
-    base_url = st.text_input("OPENAI_BASE_URL optional", disabled=dry_run)
+    api_key = st.text_input("API key", type="password", disabled=dry_run)
+    base_url = st.text_input(
+        "Base URL",
+        key="base_url_input",
+        disabled=dry_run,
+        help="OpenAI can leave this blank. DeepSeek/Qwen should use the preset URL unless your endpoint differs.",
+    )
+    if not dry_run and base_url:
+        st.caption(f"Requests will be sent to: {base_url}")
 
     test_clicked = st.button("Test API", use_container_width=True, disabled=dry_run)
     if test_clicked:
         if not api_key:
-            _status("Enter OPENAI_API_KEY first, or keep Dry run enabled.", "error")
+            _status("Enter an API key first, or keep Dry run enabled.", "error")
         else:
             with st.spinner("Testing API with a tiny request..."):
                 try:
