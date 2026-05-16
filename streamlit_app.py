@@ -49,6 +49,24 @@ PROMPT_FILES = {
 st.set_page_config(page_title="OpenStuSim Demo", layout="wide")
 
 
+def _status(message: str, kind: str = "info") -> None:
+    """Render status text without Streamlit alert widgets.
+
+    Some Streamlit builds can fail inside st.error/st.success when optional
+    emoji helpers are missing. Plain markdown keeps the app usable.
+    """
+    colors = {
+        "success": "#0f7b0f",
+        "error": "#b00020",
+        "info": "#345995",
+    }
+    color = colors.get(kind, colors["info"])
+    st.markdown(
+        f"<div style='color:{color}; font-weight:600; margin:0.35rem 0;'>{message}</div>",
+        unsafe_allow_html=True,
+    )
+
+
 def _read_table(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
@@ -141,27 +159,27 @@ with st.sidebar:
     test_clicked = st.button("Test API", use_container_width=True, disabled=dry_run)
     if test_clicked:
         if not api_key:
-            st.error("Enter OPENAI_API_KEY first, or keep Dry run enabled.")
+            _status("Enter OPENAI_API_KEY first, or keep Dry run enabled.", "error")
         else:
             with st.spinner("Testing API with a tiny request..."):
                 try:
                     reply = _test_api(model, temperature, api_key, base_url)
-                    st.success(f"API test passed. Response: {reply}")
+                    _status(f"API test passed. Response: {reply}", "success")
                 except Exception as exc:
-                    st.error(f"API test failed: {exc}")
+                    _status(f"API test failed: {exc}", "error")
 
     run_clicked = st.button("Run Full Demo", type="primary", use_container_width=True)
     if run_clicked:
         if not prompt_modes:
-            st.error("Select at least one prompt mode.")
+            _status("Select at least one prompt mode.", "error")
         else:
             with st.spinner("Running OpenStuSim pipeline..."):
                 try:
                     counts = _run_pipeline(dry_run, prompt_modes, model, temperature, api_key, base_url)
                     st.session_state["last_counts"] = counts
-                    st.success("Pipeline finished.")
+                    _status("Pipeline finished.", "success")
                 except Exception as exc:
-                    st.error(str(exc))
+                    _status(str(exc), "error")
 
 tabs = st.tabs(["Questions", "Prompt Templates", "Process Trace", "Metrics", "Figures"])
 
@@ -179,7 +197,7 @@ with tabs[1]:
         st.text_area(name, key=f"prompt_{name}", height=190)
     if st.button("Save Prompts"):
         _save_prompts_from_state()
-        st.success("Prompt templates saved.")
+        _status("Prompt templates saved.", "success")
 
 with tabs[2]:
     st.subheader("Generated Records")
@@ -206,7 +224,7 @@ with tabs[2]:
     }
     stage_df = _read_table(path_map[view_name])
     if stage_df.empty:
-        st.info("No records yet. Run the demo first.")
+        _status("No records yet. Run the demo first.", "info")
     else:
         display_cols = [
             col
@@ -233,7 +251,7 @@ with tabs[3]:
     st.subheader("Metrics")
     metrics_df = _read_table(METRICS_CSV_PATH)
     if metrics_df.empty:
-        st.info("No metrics yet. Run the demo first.")
+        _status("No metrics yet. Run the demo first.", "info")
     else:
         st.dataframe(metrics_df, use_container_width=True, hide_index=True)
     if METRICS_SUMMARY_PATH.exists():
@@ -252,4 +270,4 @@ with tabs[4]:
         if path.exists():
             st.image(str(path), use_container_width=True)
         else:
-            st.info(f"{path.name} has not been generated yet.")
+            _status(f"{path.name} has not been generated yet.", "info")
