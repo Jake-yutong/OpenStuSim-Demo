@@ -44,6 +44,8 @@ streamlit run streamlit_app.py
 
 The web demo lets you configure dry-run/API mode, edit prompt templates, inspect questions, run the full pipeline, and view generated answers, tutor feedback, judged results, metrics, and figures.
 
+When Dry run is disabled, use **Test API** to send a tiny request before running the full demo. The request uses the current model, optional base URL, and temperature setting.
+
 If `data/sample_questions.csv` is missing, the script creates a dummy file with five open-ended science questions.
 
 ## Outputs

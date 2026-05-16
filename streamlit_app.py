@@ -66,6 +66,25 @@ def _save_prompts_from_state() -> None:
             path.write_text(value, encoding="utf-8")
 
 
+def _apply_api_env(api_key: str, base_url: str) -> None:
+    if api_key:
+        os.environ["OPENAI_API_KEY"] = api_key
+    if base_url:
+        os.environ["OPENAI_BASE_URL"] = base_url
+    elif "OPENAI_BASE_URL" in os.environ:
+        del os.environ["OPENAI_BASE_URL"]
+
+
+def _test_api(model: str | None, temperature: float, api_key: str, base_url: str) -> str:
+    _apply_api_env(api_key, base_url)
+    client = LLMClient(model=model or None, dry_run=False)
+    return client.generate(
+        "Reply with exactly: OK",
+        temperature=temperature,
+        max_tokens=8,
+    ).strip()
+
+
 def _run_pipeline(
     dry_run: bool,
     prompt_modes: list[str],
@@ -75,13 +94,7 @@ def _run_pipeline(
     base_url: str,
 ) -> dict[str, int]:
     _save_prompts_from_state()
-
-    if api_key:
-        os.environ["OPENAI_API_KEY"] = api_key
-    if base_url:
-        os.environ["OPENAI_BASE_URL"] = base_url
-    elif "OPENAI_BASE_URL" in os.environ:
-        del os.environ["OPENAI_BASE_URL"]
+    _apply_api_env(api_key, base_url)
 
     questions = load_questions(SAMPLE_QUESTIONS_PATH)
     profiles = build_default_profiles()
@@ -124,6 +137,18 @@ with st.sidebar:
     temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.05)
     api_key = st.text_input("OPENAI_API_KEY", type="password", disabled=dry_run)
     base_url = st.text_input("OPENAI_BASE_URL optional", disabled=dry_run)
+
+    test_clicked = st.button("Test API", use_container_width=True, disabled=dry_run)
+    if test_clicked:
+        if not api_key:
+            st.error("Enter OPENAI_API_KEY first, or keep Dry run enabled.")
+        else:
+            with st.spinner("Testing API with a tiny request..."):
+                try:
+                    reply = _test_api(model, temperature, api_key, base_url)
+                    st.success(f"API test passed. Response: {reply}")
+                except Exception as exc:
+                    st.error(f"API test failed: {exc}")
 
     run_clicked = st.button("Run Full Demo", type="primary", use_container_width=True)
     if run_clicked:
