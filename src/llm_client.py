@@ -20,6 +20,7 @@ class LLMClient:
         self.dry_run = dry_run
         self.model = model or os.getenv("MODEL_NAME") or "gpt-4o-mini"
         self._client = None
+        self.timeout = float(os.getenv("OPENAI_TIMEOUT", "60"))
 
         if self.dry_run:
             return
@@ -37,7 +38,7 @@ class LLMClient:
             raise RuntimeError("The openai package is missing. Run: pip install -r requirements.txt") from exc
 
         base_url = os.getenv("OPENAI_BASE_URL") or None
-        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        self._client = OpenAI(api_key=api_key, base_url=base_url, timeout=self.timeout)
 
     def generate(self, prompt: str, temperature: float = 0.7, max_tokens: int = 256) -> str:
         """Return generated text for a prompt."""

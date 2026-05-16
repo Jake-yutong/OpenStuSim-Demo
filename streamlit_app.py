@@ -13,6 +13,8 @@ from src.build_profiles import build_default_profiles
 from src.config import (
     DEFAULT_PROMPT_MODES,
     FEEDBACK_PATH,
+    FEEDBACK_PROMPT_PATH,
+    JUDGE_PROMPT_PATH,
     LABEL_DISTRIBUTION_FIG_PATH,
     METRICS_CSV_PATH,
     METRICS_SUMMARY_PATH,
@@ -25,8 +27,6 @@ from src.config import (
     PROFILE_SCORES_FIG_PATH,
     PROMPT_TEMPLATE_PATHS,
     SAMPLE_QUESTIONS_PATH,
-    JUDGE_PROMPT_PATH,
-    FEEDBACK_PROMPT_PATH,
 )
 from src.dryrun import run_dryrun
 from src.evaluate import run_evaluation
@@ -47,22 +47,10 @@ PROMPT_FILES = {
 }
 
 PROVIDER_PRESETS = {
-    "OpenAI": {
-        "base_url": "",
-        "model": "gpt-4o-mini",
-    },
-    "DeepSeek": {
-        "base_url": "https://api.deepseek.com/v1",
-        "model": "deepseek-chat",
-    },
-    "Qwen": {
-        "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        "model": "qwen-plus",
-    },
-    "Custom": {
-        "base_url": os.getenv("OPENAI_BASE_URL", ""),
-        "model": os.getenv("MODEL_NAME", "gpt-4o-mini"),
-    },
+    "OpenAI": {"base_url": "", "model": "gpt-4o-mini"},
+    "DeepSeek": {"base_url": "https://api.deepseek.com/v1", "model": "deepseek-chat"},
+    "Qwen": {"base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1", "model": "qwen-plus"},
+    "Custom": {"base_url": os.getenv("OPENAI_BASE_URL", ""), "model": os.getenv("MODEL_NAME", "gpt-4o-mini")},
 }
 
 I18N = {
@@ -70,6 +58,8 @@ I18N = {
         "app_caption": "End-to-end student simulation, feedback, revision, judging, and metrics.",
         "run_settings": "Run Settings",
         "dry_run": "Dry run",
+        "max_questions": "Max questions",
+        "timeout_seconds": "Request timeout seconds",
         "prompt_modes": "Prompt modes",
         "provider_help": "DeepSeek and Qwen use OpenAI-compatible APIs with provider-specific base URLs.",
         "base_url_help": "OpenAI can leave this blank. DeepSeek/Qwen should use the preset URL unless your endpoint differs.",
@@ -96,6 +86,15 @@ I18N = {
         "save_prompts": "Save Prompts",
         "prompts_saved": "Prompt templates saved.",
         "generated_records": "Generated Records",
+        "teaching_process": "Teaching Process View",
+        "record_selector": "Select one simulated student record",
+        "student_pre_answer": "Student pre-test answer",
+        "pre_score": "Pre-test score",
+        "teacher_feedback": "Teacher feedback",
+        "student_revised_answer": "Student revised answer",
+        "post_score": "Post-test score",
+        "n_gain_label": "Normalized gain",
+        "no_trace": "No complete teaching trace yet. Run the demo first.",
         "output_stage": "Output stage",
         "no_records": "No records yet. Run the demo first.",
         "full_raw_records": "Full raw records",
@@ -117,67 +116,77 @@ I18N = {
         "records": "records",
     },
     "zh": {
-        "app_caption": "端到端学生模拟、教学反馈、修正回答、自动评分与指标评估。",
-        "run_settings": "运行设置",
-        "dry_run": "Dry run（本地演示）",
-        "prompt_modes": "Prompt 模式",
-        "provider_help": "DeepSeek 和 Qwen 使用 OpenAI-compatible API，并需要对应的 base URL。",
-        "base_url_help": "OpenAI 可留空。DeepSeek/Qwen 建议使用预设 URL，除非你的 endpoint 不同。",
-        "requests_to": "请求将发送至",
-        "test_api": "测试 API",
-        "need_key": "请先输入 API key，或保持 Dry run 开启。",
-        "testing_api": "正在用极小请求测试 API...",
-        "api_ok": "API 测试通过。返回",
-        "api_failed": "API 测试失败",
-        "run_full_demo": "运行完整 Demo",
-        "select_prompt_mode": "请至少选择一个 prompt 模式。",
-        "running_pipeline": "正在运行 OpenStuSim pipeline...",
-        "pipeline_finished": "Pipeline 已完成。",
-        "live_process": "实时过程",
-        "latest_stage_preview": "最新阶段预览",
-        "questions": "问题",
-        "prompt_templates": "Prompt 模板",
-        "process_trace": "过程追踪",
-        "metrics": "指标",
-        "figures": "图表",
-        "question_set": "问题集",
-        "editable_prompts": "可编辑 Prompt 模板",
-        "prompt_edit_note": "点击保存 Prompt 或运行完整 Demo 时会保存修改。",
-        "save_prompts": "保存 Prompt",
-        "prompts_saved": "Prompt 模板已保存。",
-        "generated_records": "生成记录",
-        "output_stage": "输出阶段",
-        "no_records": "暂无记录。请先运行 Demo。",
-        "full_raw_records": "完整原始记录",
-        "key_results": "关键结果",
-        "auto_conclusion": "自动结论",
-        "raw_metrics": "原始指标",
-        "no_metrics": "暂无指标。请先运行 Demo。",
+        "app_caption": "\u7aef\u5230\u7aef\u5b66\u751f\u6a21\u62df\u3001\u6559\u5b66\u53cd\u9988\u3001\u4fee\u6b63\u56de\u7b54\u3001\u81ea\u52a8\u8bc4\u5206\u4e0e\u6307\u6807\u8bc4\u4f30\u3002",
+        "run_settings": "\u8fd0\u884c\u8bbe\u7f6e",
+        "dry_run": "Dry run\uff08\u672c\u5730\u6f14\u793a\uff09",
+        "max_questions": "\u6700\u591a\u9898\u76ee\u6570",
+        "timeout_seconds": "\u5355\u6b21\u8bf7\u6c42\u8d85\u65f6\u79d2\u6570",
+        "prompt_modes": "Prompt \u6a21\u5f0f",
+        "provider_help": "DeepSeek \u548c Qwen \u4f7f\u7528 OpenAI-compatible API\uff0c\u5e76\u9700\u8981\u5bf9\u5e94\u7684 base URL\u3002",
+        "base_url_help": "OpenAI \u53ef\u7559\u7a7a\u3002DeepSeek/Qwen \u5efa\u8bae\u4f7f\u7528\u9884\u8bbe URL\uff0c\u9664\u975e\u4f60\u7684 endpoint \u4e0d\u540c\u3002",
+        "requests_to": "\u8bf7\u6c42\u5c06\u53d1\u9001\u81f3",
+        "test_api": "\u6d4b\u8bd5 API",
+        "need_key": "\u8bf7\u5148\u8f93\u5165 API key\uff0c\u6216\u4fdd\u6301 Dry run \u5f00\u542f\u3002",
+        "testing_api": "\u6b63\u5728\u7528\u6781\u5c0f\u8bf7\u6c42\u6d4b\u8bd5 API...",
+        "api_ok": "API \u6d4b\u8bd5\u901a\u8fc7\u3002\u8fd4\u56de",
+        "api_failed": "API \u6d4b\u8bd5\u5931\u8d25",
+        "run_full_demo": "\u8fd0\u884c\u5b8c\u6574 Demo",
+        "select_prompt_mode": "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a prompt \u6a21\u5f0f\u3002",
+        "running_pipeline": "\u6b63\u5728\u8fd0\u884c OpenStuSim pipeline...",
+        "pipeline_finished": "Pipeline \u5df2\u5b8c\u6210\u3002",
+        "live_process": "\u5b9e\u65f6\u8fc7\u7a0b",
+        "latest_stage_preview": "\u6700\u65b0\u9636\u6bb5\u9884\u89c8",
+        "questions": "\u95ee\u9898",
+        "prompt_templates": "Prompt \u6a21\u677f",
+        "process_trace": "\u8fc7\u7a0b\u8ffd\u8e2a",
+        "metrics": "\u6307\u6807",
+        "figures": "\u56fe\u8868",
+        "question_set": "\u95ee\u9898\u96c6",
+        "editable_prompts": "\u53ef\u7f16\u8f91 Prompt \u6a21\u677f",
+        "prompt_edit_note": "\u70b9\u51fb\u4fdd\u5b58 Prompt \u6216\u8fd0\u884c\u5b8c\u6574 Demo \u65f6\u4f1a\u4fdd\u5b58\u4fee\u6539\u3002",
+        "save_prompts": "\u4fdd\u5b58 Prompt",
+        "prompts_saved": "Prompt \u6a21\u677f\u5df2\u4fdd\u5b58\u3002",
+        "generated_records": "\u751f\u6210\u8bb0\u5f55",
+        "teaching_process": "\u6559\u5b66\u8fc7\u7a0b\u89c6\u56fe",
+        "record_selector": "\u9009\u62e9\u4e00\u6761\u6a21\u62df\u5b66\u751f\u8bb0\u5f55",
+        "student_pre_answer": "\u5b66\u751f\u521d\u6b21\u56de\u7b54",
+        "pre_score": "Pre-test \u5206\u6570",
+        "teacher_feedback": "\u6559\u5e08\u6559\u5b66\u53cd\u9988",
+        "student_revised_answer": "\u5b66\u751f\u4fee\u6b63\u56de\u7b54",
+        "post_score": "Post-test \u5206\u6570",
+        "n_gain_label": "Normalized gain",
+        "no_trace": "\u6682\u65e0\u5b8c\u6574\u6559\u5b66\u8fc7\u7a0b\u3002\u8bf7\u5148\u8fd0\u884c Demo\u3002",
+        "output_stage": "\u8f93\u51fa\u9636\u6bb5",
+        "no_records": "\u6682\u65e0\u8bb0\u5f55\u3002\u8bf7\u5148\u8fd0\u884c Demo\u3002",
+        "full_raw_records": "\u5b8c\u6574\u539f\u59cb\u8bb0\u5f55",
+        "key_results": "\u5173\u952e\u7ed3\u679c",
+        "auto_conclusion": "\u81ea\u52a8\u7ed3\u8bba",
+        "raw_metrics": "\u539f\u59cb\u6307\u6807",
+        "no_metrics": "\u6682\u65e0\u6307\u6807\u3002\u8bf7\u5148\u8fd0\u884c Demo\u3002",
         "summary_json": "Summary JSON",
-        "profile_scores": "Profile 分数",
+        "profile_scores": "Profile \u5206\u6570",
         "normalized_gain": "Normalized gain",
-        "label_distribution": "标签分布",
-        "figure_missing": "尚未生成。",
-        "pre_answers": "Pre-test 回答",
-        "pre_judged": "Pre-test 评分",
-        "feedback": "教师反馈",
-        "post_answers": "反馈后回答",
-        "post_judged": "Post-test 评分与 n-gain",
-        "metrics_stage": "指标与图表",
-        "records": "条记录",
+        "label_distribution": "\u6807\u7b7e\u5206\u5e03",
+        "figure_missing": "\u5c1a\u672a\u751f\u6210\u3002",
+        "pre_answers": "Pre-test \u56de\u7b54",
+        "pre_judged": "Pre-test \u8bc4\u5206",
+        "feedback": "\u6559\u5e08\u53cd\u9988",
+        "post_answers": "\u53cd\u9988\u540e\u56de\u7b54",
+        "post_judged": "Post-test \u8bc4\u5206\u4e0e n-gain",
+        "metrics_stage": "\u6307\u6807\u4e0e\u56fe\u8868",
+        "records": "\u6761\u8bb0\u5f55",
     },
 }
 
 
 st.set_page_config(page_title="OpenStuSim Demo", layout="wide")
 
-
 if "language" not in st.session_state:
     st.session_state["language"] = "English"
 
 
 def _lang_code() -> str:
-    return "zh" if st.session_state.get("language") == "中文" else "en"
+    return "zh" if st.session_state.get("language") == "\u4e2d\u6587" else "en"
 
 
 def _t(key: str) -> str:
@@ -185,16 +194,7 @@ def _t(key: str) -> str:
 
 
 def _status(message: str, kind: str = "info") -> None:
-    """Render status text without Streamlit alert widgets.
-
-    Some Streamlit builds can fail inside st.error/st.success when optional
-    emoji helpers are missing. Plain markdown keeps the app usable.
-    """
-    colors = {
-        "success": "#0f7b0f",
-        "error": "#b00020",
-        "info": "#345995",
-    }
+    colors = {"success": "#0f7b0f", "error": "#b00020", "info": "#345995"}
     color = colors.get(kind, colors["info"])
     st.markdown(
         f"<div style='color:{color}; font-weight:600; margin:0.35rem 0;'>{message}</div>",
@@ -274,28 +274,28 @@ def _build_conclusion(metrics_df: pd.DataFrame, summary: dict) -> str:
     mean_gain = _metric_value(metrics_df, "mean_n_gain")
     over = _metric_value(metrics_df, "over_improvement_rate")
     l1 = _metric_value(metrics_df, "label_distribution_l1")
-
-    controllable = (
-        low is not None
-        and medium is not None
-        and high is not None
-        and low <= medium <= high
-    )
+    controllable = low is not None and medium is not None and high is not None and low <= medium <= high
 
     if _lang_code() == "zh":
-        parts = []
-        parts.append("Profile controllability 基本成立。" if controllable else "Profile controllability 不够理想，Low/Medium/High 的 pre-score 排序不完全符合预期。")
+        parts = [
+            "Profile controllability \u57fa\u672c\u6210\u7acb\u3002"
+            if controllable
+            else "Profile controllability \u4e0d\u591f\u7406\u60f3\uff0cLow/Medium/High \u7684 pre-score \u6392\u5e8f\u4e0d\u5b8c\u5168\u7b26\u5408\u9884\u671f\u3002"
+        ]
         if mean_gain is not None:
-            parts.append(f"平均 normalized gain 为 {mean_gain:.2f}，表示反馈后存在可观察的提升。")
+            parts.append(f"\u5e73\u5747 normalized gain \u4e3a {mean_gain:.2f}\uff0c\u8868\u793a\u53cd\u9988\u540e\u5b58\u5728\u53ef\u89c2\u5bdf\u7684\u63d0\u5347\u3002")
         if over is not None:
-            parts.append(f"Over-improvement rate 为 {over:.2%}；该值越高，越可能说明模型把学生提升得过快。")
+            parts.append(f"Over-improvement rate \u4e3a {over:.2%}\uff1b\u8be5\u503c\u8d8a\u9ad8\uff0c\u8d8a\u53ef\u80fd\u8bf4\u660e\u6a21\u578b\u628a\u5b66\u751f\u63d0\u5347\u5f97\u8fc7\u5feb\u3002")
         if l1 is not None:
-            parts.append(f"标签分布 L1 distance 为 {l1:.2f}；该值越低，模拟错误类型越接近真实学生分布。")
-        parts.append("总体上，应同时查看 profile 排序、gain、over-improvement 与 label alignment，而不是只看 post-score。")
+            parts.append(f"\u6807\u7b7e\u5206\u5e03 L1 distance \u4e3a {l1:.2f}\uff1b\u8be5\u503c\u8d8a\u4f4e\uff0c\u6a21\u62df\u9519\u8bef\u7c7b\u578b\u8d8a\u63a5\u8fd1\u771f\u5b9e\u5b66\u751f\u5206\u5e03\u3002")
+        parts.append("\u603b\u4f53\u4e0a\uff0c\u5e94\u540c\u65f6\u67e5\u770b profile \u6392\u5e8f\u3001gain\u3001over-improvement \u548c label alignment\uff0c\u800c\u4e0d\u662f\u53ea\u770b post-score\u3002")
         return " ".join(parts)
 
-    parts = []
-    parts.append("Profile controllability is broadly supported." if controllable else "Profile controllability is weak because Low/Medium/High pre-scores are not fully ordered.")
+    parts = [
+        "Profile controllability is broadly supported."
+        if controllable
+        else "Profile controllability is weak because Low/Medium/High pre-scores are not fully ordered."
+    ]
     if mean_gain is not None:
         parts.append(f"The mean normalized gain is {mean_gain:.2f}, indicating observable feedback-driven improvement.")
     if over is not None:
@@ -321,11 +321,7 @@ def _show_key_metrics(metrics_df: pd.DataFrame, summary: dict) -> None:
     col3.metric("Mean n-gain", f"{mean_gain:.2f}" if mean_gain is not None else "NA")
     col4.metric("Label L1", f"{l1:.2f}" if l1 is not None else "NA")
 
-    profile_rows = [
-        row
-        for row in summary.get("profile_metrics", [])
-        if row.get("prompt_mode") and row.get("profile")
-    ]
+    profile_rows = [row for row in summary.get("profile_metrics", []) if row.get("prompt_mode") and row.get("profile")]
     if profile_rows:
         profile_df = pd.DataFrame(profile_rows)
         keep = [
@@ -340,6 +336,41 @@ def _show_key_metrics(metrics_df: pd.DataFrame, summary: dict) -> None:
         st.dataframe(profile_df[keep], use_container_width=True, hide_index=True)
 
 
+def _render_teaching_trace(df: pd.DataFrame) -> None:
+    if df.empty or "post_answer" not in df.columns:
+        _status(_t("no_trace"), "info")
+        return
+
+    labels = [
+        f"{row.qid} | {row.profile} | {row.prompt_mode}"
+        for row in df[["qid", "profile", "prompt_mode"]].itertuples(index=False)
+    ]
+    selected = st.selectbox(_t("record_selector"), labels)
+    row = df.iloc[labels.index(selected)]
+
+    st.markdown(f"**Question:** {row['question']}")
+    st.markdown(f"**Reference answer:** {row['reference_answer']}")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown(f"### {_t('student_pre_answer')}")
+        st.write(row.get("pre_answer", ""))
+        st.metric(_t("pre_score"), row.get("pre_score", "NA"))
+        st.caption(str(row.get("pre_label", "")))
+    with c2:
+        st.markdown(f"### {_t('teacher_feedback')}")
+        st.write(row.get("feedback", ""))
+
+    c3, c4 = st.columns(2)
+    with c3:
+        st.markdown(f"### {_t('student_revised_answer')}")
+        st.write(row.get("post_answer", ""))
+    with c4:
+        st.metric(_t("post_score"), row.get("post_score", "NA"))
+        st.metric(_t("n_gain_label"), row.get("n_gain", "NA"))
+        st.caption(str(row.get("post_label", "")))
+
+
 def _save_prompts_from_state() -> None:
     for name, path in PROMPT_FILES.items():
         value = st.session_state.get(f"prompt_{name}")
@@ -347,23 +378,20 @@ def _save_prompts_from_state() -> None:
             path.write_text(value, encoding="utf-8")
 
 
-def _apply_api_env(api_key: str, base_url: str) -> None:
+def _apply_api_env(api_key: str, base_url: str, timeout_seconds: int) -> None:
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
     if base_url:
         os.environ["OPENAI_BASE_URL"] = base_url
     elif "OPENAI_BASE_URL" in os.environ:
         del os.environ["OPENAI_BASE_URL"]
+    os.environ["OPENAI_TIMEOUT"] = str(timeout_seconds)
 
 
-def _test_api(model: str | None, temperature: float, api_key: str, base_url: str) -> str:
-    _apply_api_env(api_key, base_url)
+def _test_api(model: str | None, temperature: float, api_key: str, base_url: str, timeout_seconds: int) -> str:
+    _apply_api_env(api_key, base_url, timeout_seconds)
     client = LLMClient(model=model or None, dry_run=False)
-    return client.generate(
-        "Reply with exactly: OK",
-        temperature=temperature,
-        max_tokens=8,
-    ).strip()
+    return client.generate("Reply with exactly: OK", temperature=temperature, max_tokens=8).strip()
 
 
 def _run_pipeline(
@@ -373,12 +401,14 @@ def _run_pipeline(
     temperature: float,
     api_key: str,
     base_url: str,
+    timeout_seconds: int,
+    max_questions: int,
     progress_placeholder=None,
 ) -> dict[str, int]:
     _save_prompts_from_state()
-    _apply_api_env(api_key, base_url)
+    _apply_api_env(api_key, base_url, timeout_seconds)
 
-    questions = load_questions(SAMPLE_QUESTIONS_PATH)
+    questions = load_questions(SAMPLE_QUESTIONS_PATH).head(max_questions)
     profiles = build_default_profiles()
     client = LLMClient(model=model or None, dry_run=dry_run)
     steps: list[dict] = []
@@ -418,7 +448,7 @@ def _run_pipeline(
 
 
 with st.sidebar:
-    st.selectbox("Language / 语言", ["English", "中文"], key="language")
+    st.selectbox("Language / \u8bed\u8a00", ["English", "\u4e2d\u6587"], key="language")
 
 st.title("OpenStuSim Demo")
 st.caption(_t("app_caption"))
@@ -427,17 +457,11 @@ run_progress = st.empty()
 with st.sidebar:
     st.header(_t("run_settings"))
     dry_run = st.toggle(_t("dry_run"), value=True)
-    prompt_modes = st.multiselect(
-        _t("prompt_modes"),
-        options=list(PROMPT_TEMPLATE_PATHS.keys()),
-        default=DEFAULT_PROMPT_MODES,
-    )
-    provider = st.selectbox(
-        "Provider",
-        options=list(PROVIDER_PRESETS.keys()),
-        disabled=dry_run,
-        help=_t("provider_help"),
-    )
+    all_questions = load_questions(SAMPLE_QUESTIONS_PATH)
+    max_questions = st.number_input(_t("max_questions"), min_value=1, max_value=len(all_questions), value=len(all_questions), step=1)
+    timeout_seconds = st.number_input(_t("timeout_seconds"), min_value=10, max_value=300, value=60, step=10)
+    prompt_modes = st.multiselect(_t("prompt_modes"), options=list(PROMPT_TEMPLATE_PATHS.keys()), default=DEFAULT_PROMPT_MODES)
+    provider = st.selectbox("Provider", options=list(PROVIDER_PRESETS.keys()), disabled=dry_run, help=_t("provider_help"))
     if st.session_state.get("last_provider") != provider:
         preset = PROVIDER_PRESETS[provider]
         st.session_state["model_input"] = preset["model"]
@@ -447,12 +471,7 @@ with st.sidebar:
     model = st.text_input("Model", key="model_input")
     temperature = st.slider("Temperature", 0.0, 2.0, 0.7, 0.05)
     api_key = st.text_input("API key", type="password", disabled=dry_run)
-    base_url = st.text_input(
-        "Base URL",
-        key="base_url_input",
-        disabled=dry_run,
-        help=_t("base_url_help"),
-    )
+    base_url = st.text_input("Base URL", key="base_url_input", disabled=dry_run, help=_t("base_url_help"))
     if not dry_run and base_url:
         st.caption(f"{_t('requests_to')}: {base_url}")
 
@@ -463,7 +482,7 @@ with st.sidebar:
         else:
             with st.spinner(_t("testing_api")):
                 try:
-                    reply = _test_api(model, temperature, api_key, base_url)
+                    reply = _test_api(model, temperature, api_key, base_url, int(timeout_seconds))
                     _status(f"{_t('api_ok')}: {reply}", "success")
                 except Exception as exc:
                     _status(f"{_t('api_failed')}: {exc}", "error")
@@ -482,6 +501,8 @@ with st.sidebar:
                         temperature,
                         api_key,
                         base_url,
+                        int(timeout_seconds),
+                        int(max_questions),
                         progress_placeholder=run_progress,
                     )
                     st.session_state["last_counts"] = counts
@@ -489,18 +510,11 @@ with st.sidebar:
                 except Exception as exc:
                     _status(str(exc), "error")
 
-tabs = st.tabs([
-    _t("questions"),
-    _t("prompt_templates"),
-    _t("process_trace"),
-    _t("metrics"),
-    _t("figures"),
-])
+tabs = st.tabs([_t("questions"), _t("prompt_templates"), _t("process_trace"), _t("metrics"), _t("figures")])
 
 with tabs[0]:
     st.subheader(_t("question_set"))
-    questions_df = load_questions(SAMPLE_QUESTIONS_PATH)
-    st.dataframe(questions_df, use_container_width=True, hide_index=True)
+    st.dataframe(load_questions(SAMPLE_QUESTIONS_PATH), use_container_width=True, hide_index=True)
 
 with tabs[1]:
     st.subheader(_t("editable_prompts"))
@@ -514,24 +528,21 @@ with tabs[1]:
         _status(_t("prompts_saved"), "success")
 
 with tabs[2]:
+    st.subheader(_t("teaching_process"))
+    post_df = _read_table(POST_JUDGED_PATH)
+    _render_teaching_trace(post_df)
+
     st.subheader(_t("generated_records"))
     counts = st.session_state.get("last_counts")
     if counts:
         st.write(counts)
-
     steps = st.session_state.get("run_steps", [])
     if steps:
         _render_steps(st.empty(), steps)
 
     view_name = st.selectbox(
         _t("output_stage"),
-        [
-            "pre_answers",
-            "pre_judged",
-            "feedback",
-            "post_answers",
-            "post_judged",
-        ],
+        ["pre_answers", "pre_judged", "feedback", "post_answers", "post_judged"],
     )
     path_map = {
         "pre_answers": PRE_ANSWERS_PATH,
