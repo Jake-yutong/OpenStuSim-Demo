@@ -136,7 +136,7 @@ def compute_metrics(records: pd.DataFrame, questions: pd.DataFrame) -> tuple[pd.
 
 def plot_profile_scores(records: pd.DataFrame) -> None:
     summary = records.groupby("profile")[["pre_score", "post_score"]].mean().reindex(["Low", "Medium", "High"])
-    ax = summary.plot(kind="bar", figsize=(7, 4), rot=0)
+    ax = summary.plot(kind="bar", figsize=(5.4, 3.2), rot=0)
     ax.set_ylabel("Mean score")
     ax.set_xlabel("Profile")
     ax.set_ylim(0, 1.05)
@@ -144,20 +144,20 @@ def plot_profile_scores(records: pd.DataFrame) -> None:
     ax.legend(["Pre", "Post"])
     plt.tight_layout()
     PROFILE_SCORES_FIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(PROFILE_SCORES_FIG_PATH, dpi=150)
+    plt.savefig(PROFILE_SCORES_FIG_PATH, dpi=120, bbox_inches="tight")
     plt.close()
 
 
 def plot_n_gain(records: pd.DataFrame) -> None:
     summary = records.groupby("profile")["n_gain"].mean().reindex(["Low", "Medium", "High"])
-    ax = summary.plot(kind="bar", figsize=(7, 4), rot=0)
+    ax = summary.plot(kind="bar", figsize=(5.4, 3.2), rot=0)
     ax.set_ylabel("Mean normalized gain")
     ax.set_xlabel("Profile")
     ax.set_ylim(0, 1.05)
     ax.set_title("Mean Normalized Gain by Profile")
     plt.tight_layout()
     N_GAIN_FIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(N_GAIN_FIG_PATH, dpi=150)
+    plt.savefig(N_GAIN_FIG_PATH, dpi=120, bbox_inches="tight")
     plt.close()
 
 
@@ -165,14 +165,14 @@ def plot_label_distribution(records: pd.DataFrame, questions: pd.DataFrame) -> N
     real_dist = _real_label_distribution(questions)
     sim_dist = _sim_label_distribution(records)
     plot_df = pd.DataFrame({"Real": real_dist, "Simulated": sim_dist}).reindex(LABELS)
-    ax = plot_df.plot(kind="bar", figsize=(9, 4), rot=25)
+    ax = plot_df.plot(kind="bar", figsize=(6.4, 3.4), rot=20)
     ax.set_ylabel("Proportion")
     ax.set_xlabel("Label")
     ax.set_ylim(0, 1.0)
     ax.set_title("Real vs Simulated Pre-label Distribution")
     plt.tight_layout()
     LABEL_DISTRIBUTION_FIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(LABEL_DISTRIBUTION_FIG_PATH, dpi=150)
+    plt.savefig(LABEL_DISTRIBUTION_FIG_PATH, dpi=120, bbox_inches="tight")
     plt.close()
 
 

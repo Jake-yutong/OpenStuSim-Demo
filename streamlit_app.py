@@ -69,7 +69,8 @@ I18N = {
         "testing_api": "Testing API with a tiny request...",
         "api_ok": "API test passed. Response",
         "api_failed": "API test failed",
-        "run_full_demo": "Run Full Demo",
+        "run_full_demo": "Run Full Demo Once",
+        "one_click_note": "One click runs: pre-test -> pre-judge -> feedback -> post-test -> post-judge -> metrics.",
         "select_prompt_mode": "Select at least one prompt mode.",
         "running_pipeline": "Running OpenStuSim pipeline...",
         "pipeline_finished": "Pipeline finished.",
@@ -99,6 +100,9 @@ I18N = {
         "no_records": "No records yet. Run the demo first.",
         "full_raw_records": "Full raw records",
         "key_results": "Key Results",
+        "metric_help": "Higher post-score and n-gain are better. Lower over-improvement and label L1 are better.",
+        "prompt_mode_summary": "Prompt Mode Summary",
+        "profile_detail": "Profile Detail",
         "auto_conclusion": "Auto Conclusion",
         "raw_metrics": "Raw Metrics",
         "no_metrics": "No metrics yet. Run the demo first.",
@@ -130,7 +134,8 @@ I18N = {
         "testing_api": "\u6b63\u5728\u7528\u6781\u5c0f\u8bf7\u6c42\u6d4b\u8bd5 API...",
         "api_ok": "API \u6d4b\u8bd5\u901a\u8fc7\u3002\u8fd4\u56de",
         "api_failed": "API \u6d4b\u8bd5\u5931\u8d25",
-        "run_full_demo": "\u8fd0\u884c\u5b8c\u6574 Demo",
+        "run_full_demo": "\u4e00\u6b21\u8fd0\u884c\u5b8c\u6574 Demo",
+        "one_click_note": "\u4e00\u6b21\u70b9\u51fb\u4f1a\u81ea\u52a8\u5b8c\u6210\uff1apre-test -> pre-judge -> feedback -> post-test -> post-judge -> metrics\u3002",
         "select_prompt_mode": "\u8bf7\u81f3\u5c11\u9009\u62e9\u4e00\u4e2a prompt \u6a21\u5f0f\u3002",
         "running_pipeline": "\u6b63\u5728\u8fd0\u884c OpenStuSim pipeline...",
         "pipeline_finished": "Pipeline \u5df2\u5b8c\u6210\u3002",
@@ -160,6 +165,9 @@ I18N = {
         "no_records": "\u6682\u65e0\u8bb0\u5f55\u3002\u8bf7\u5148\u8fd0\u884c Demo\u3002",
         "full_raw_records": "\u5b8c\u6574\u539f\u59cb\u8bb0\u5f55",
         "key_results": "\u5173\u952e\u7ed3\u679c",
+        "metric_help": "Post-score \u548c n-gain \u8d8a\u9ad8\u8d8a\u597d\uff1bover-improvement \u548c label L1 \u8d8a\u4f4e\u8d8a\u597d\u3002",
+        "prompt_mode_summary": "Prompt \u6a21\u5f0f\u6c47\u603b",
+        "profile_detail": "Profile \u8be6\u7ec6\u6307\u6807",
         "auto_conclusion": "\u81ea\u52a8\u7ed3\u8bba",
         "raw_metrics": "\u539f\u59cb\u6307\u6807",
         "no_metrics": "\u6682\u65e0\u6307\u6807\u3002\u8bf7\u5148\u8fd0\u884c Demo\u3002",
@@ -258,6 +266,59 @@ def _metric_value(metrics_df: pd.DataFrame, metric: str, profile: str | None = N
     return float(sub["value"].mean())
 
 
+def _format_metric(value: float | None, digits: int = 2, percent: bool = False) -> str:
+    if value is None or pd.isna(value):
+        return "NA"
+    if percent:
+        return f"{value:.1%}"
+    return f"{value:.{digits}f}"
+
+
+def _metric_card(label: str, value: str, note: str = "", color: str = "#345995") -> None:
+    st.markdown(
+        f"""
+        <div style="
+            border:1px solid #d8dee9;
+            border-left:6px solid {color};
+            border-radius:8px;
+            padding:0.75rem 0.85rem;
+            min-height:6.2rem;
+            background:#ffffff;">
+            <div style="font-size:0.8rem;color:#5b6472;font-weight:650;">{label}</div>
+            <div style="font-size:1.75rem;line-height:1.15;font-weight:750;margin-top:0.25rem;">{value}</div>
+            <div style="font-size:0.78rem;color:#6b7280;margin-top:0.3rem;">{note}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _mode_summary_df(metrics_df: pd.DataFrame, summary: dict) -> pd.DataFrame:
+    profile_rows = [row for row in summary.get("profile_metrics", []) if row.get("prompt_mode") and row.get("profile")]
+    if not profile_rows:
+        return pd.DataFrame()
+
+    profile_df = pd.DataFrame(profile_rows)
+    mode_df = (
+        profile_df.groupby("prompt_mode", as_index=False)
+        .agg(
+            mean_pre_score=("mean_pre_score", "mean"),
+            mean_post_score=("mean_post_score", "mean"),
+            mean_n_gain=("mean_n_gain", "mean"),
+            over_improvement_rate=("over_improvement_rate", "mean"),
+        )
+    )
+
+    l1 = metrics_df[metrics_df["metric"] == "label_distribution_l1"][["prompt_mode", "value"]].rename(
+        columns={"value": "label_l1"}
+    )
+    corr = metrics_df[metrics_df["metric"] == "difficulty_pearson_corr"][["prompt_mode", "value"]].rename(
+        columns={"value": "difficulty_corr"}
+    )
+    mode_df = mode_df.merge(l1, on="prompt_mode", how="left").merge(corr, on="prompt_mode", how="left")
+    return mode_df.round(3)
+
+
 def _load_summary() -> dict:
     if not METRICS_SUMMARY_PATH.exists():
         return {}
@@ -311,19 +372,41 @@ def _show_key_metrics(metrics_df: pd.DataFrame, summary: dict) -> None:
         _status(_t("no_metrics"), "info")
         return
 
-    col1, col2, col3, col4 = st.columns(4)
     mean_pre = _metric_value(metrics_df, "mean_pre_score")
     mean_post = _metric_value(metrics_df, "mean_post_score")
     mean_gain = _metric_value(metrics_df, "mean_n_gain")
+    over = _metric_value(metrics_df, "over_improvement_rate")
     l1 = _metric_value(metrics_df, "label_distribution_l1")
-    col1.metric("Mean pre-score", f"{mean_pre:.2f}" if mean_pre is not None else "NA")
-    col2.metric("Mean post-score", f"{mean_post:.2f}" if mean_post is not None else "NA")
-    col3.metric("Mean n-gain", f"{mean_gain:.2f}" if mean_gain is not None else "NA")
-    col4.metric("Label L1", f"{l1:.2f}" if l1 is not None else "NA")
+    low = _metric_value(metrics_df, "mean_pre_score", "Low")
+    medium = _metric_value(metrics_df, "mean_pre_score", "Medium")
+    high = _metric_value(metrics_df, "mean_pre_score", "High")
+    ordered = low is not None and medium is not None and high is not None and low <= medium <= high
+
+    st.caption(_t("metric_help"))
+    cols = st.columns(6)
+    with cols[0]:
+        _metric_card("Pre-score", _format_metric(mean_pre), "Baseline", "#64748b")
+    with cols[1]:
+        _metric_card("Post-score", _format_metric(mean_post), "After feedback", "#2563eb")
+    with cols[2]:
+        _metric_card("n-gain", _format_metric(mean_gain), "Learning effect", "#16a34a")
+    with cols[3]:
+        _metric_card("Over-improve", _format_metric(over, percent=True), "Should stay low", "#dc2626")
+    with cols[4]:
+        _metric_card("Label L1", _format_metric(l1), "Alignment gap", "#7c3aed")
+    with cols[5]:
+        _metric_card("Profile order", "PASS" if ordered else "CHECK", "Low <= Medium <= High", "#16a34a" if ordered else "#f97316")
+
+    mode_df = _mode_summary_df(metrics_df, summary)
+    if not mode_df.empty:
+        st.subheader(_t("prompt_mode_summary"))
+        st.dataframe(mode_df, use_container_width=True, hide_index=True)
 
     profile_rows = [row for row in summary.get("profile_metrics", []) if row.get("prompt_mode") and row.get("profile")]
     if profile_rows:
         profile_df = pd.DataFrame(profile_rows)
+        profile_df["profile"] = pd.Categorical(profile_df["profile"], categories=["Low", "Medium", "High"], ordered=True)
+        profile_df = profile_df.sort_values(["prompt_mode", "profile"])
         keep = [
             "prompt_mode",
             "profile",
@@ -333,7 +416,8 @@ def _show_key_metrics(metrics_df: pd.DataFrame, summary: dict) -> None:
             "mean_n_gain",
             "over_improvement_rate",
         ]
-        st.dataframe(profile_df[keep], use_container_width=True, hide_index=True)
+        st.subheader(_t("profile_detail"))
+        st.dataframe(profile_df[keep].round(3), use_container_width=True, hide_index=True)
 
 
 def _render_teaching_trace(df: pd.DataFrame) -> None:
@@ -488,6 +572,7 @@ with st.sidebar:
                     _status(f"{_t('api_failed')}: {exc}", "error")
 
     run_clicked = st.button(_t("run_full_demo"), type="primary", use_container_width=True)
+    st.caption(_t("one_click_note"))
     if run_clicked:
         if not prompt_modes:
             _status(_t("select_prompt_mode"), "error")
@@ -602,6 +687,6 @@ with tabs[4]:
     for title, path in fig_paths:
         st.markdown(f"**{title}**")
         if path.exists():
-            st.image(str(path), use_container_width=True)
+            st.image(str(path), width=680)
         else:
             _status(f"{path.name} {_t('figure_missing')}", "info")

@@ -12,6 +12,8 @@ pip install -r requirements.txt
 
 ## Run
 
+Each run executes the full pipeline once: pre-test answers, pre-test judging, tutor feedback, post-test revised answers, post-test judging, metrics, and figures.
+
 ```bash
 python run_demo.py --dry_run
 ```
@@ -33,6 +35,7 @@ Optional environment variables:
 
 - `OPENAI_BASE_URL`
 - `MODEL_NAME`
+- `OPENAI_TIMEOUT`
 
 ## Web Demo
 
@@ -42,7 +45,7 @@ For an interactive reproduction and presentation interface:
 streamlit run streamlit_app.py
 ```
 
-The web demo lets you configure dry-run/API mode, edit prompt templates, inspect questions, run the full pipeline, and view generated answers, tutor feedback, judged results, metrics, and figures.
+The web demo lets you configure dry-run/API mode, edit prompt templates, inspect questions, run the full pipeline with one button, and view generated answers, tutor feedback, judged results, metrics, and figures.
 
 When Dry run is disabled, choose a provider before entering the API key. The web demo includes presets for OpenAI, DeepSeek, and Qwen. DeepSeek and Qwen automatically fill their OpenAI-compatible base URLs. Use **Test API** to send a tiny request before running the full demo. The request uses the current model, base URL, and temperature setting.
 
